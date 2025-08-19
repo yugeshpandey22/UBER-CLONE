@@ -1,52 +1,80 @@
-const userModel = require('../models/user.model');
-const userService = require('../services/user.service');
-const { validationResult } = require('express-validator');
+const User = require("../models/user.model");
 
-module.exports.registerUser = async (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { firstname, lastname, email, password } = req.body;
-
+// ========================= REGISTER =========================
+const registerUser = async (req, res) => {
   try {
-    const hashedPassword = await userModel.hashPassword(password);
+    const { firstname, lastname, email, password } = req.body;
 
-    const user = await userService.createUser({
+    if (!firstname || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // password hash
+    const hashedPassword = await User.hashPassword(password);
+
+    const user = new User({
       firstname,
       lastname,
       email,
       password: hashedPassword,
     });
 
+    await user.save();
+
+    res.status(201).json({
+      _id: user._id,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      email: user.email,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ========================= LOGIN =========================
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid email or password" });
+    }
+
     const token = user.generateAuthToken();
 
-    res.status(200).json({ token, user });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(200).json({
+      user: {
+        _id: user._id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+      },
+      token,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
-// Existing registerUser function...
-
-module.exports.getUsers = async (req, res) => {
-  try {
-    const users = await userModel.find().select('-password'); // exclude password
-    res.status(200).json(users);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error fetching users' });
-  }
+// ========================= GET PROFILE =========================
+const getProfile = async (req, res) => {
+  res.status(200).json(req.user);
 };
 
-module.exports.getUserById = async (req, res) => {
-  try {
-    const user = await userModel.findById(req.params.id).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching user' });
-  }
+module.exports = {
+  registerUser,
+  loginUser,
+  getProfile,   // ✅ export kiya
 };

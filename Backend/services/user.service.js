@@ -1,18 +1,20 @@
-// services/user.service.js
-const userModel = require('../models/user.model');
+const express = require("express");
+const dotenv = require("dotenv");
+const connectDB = require("./config/db");
+const authRoutes = require("./routes/auth.routes");
 
-module.exports.createUser = async ({ firstname, lastname, email, password }) => {
-  if (!firstname || !email || !password) {
-    throw new Error('All fields are required');
-  }
+dotenv.config();
+const app = express();
 
-  // ✅ Must use await
-  const user = await userModel.create({
-    firstname,
-    lastname,
-    email,
-    password,
-  });
+connectDB();
+app.use(express.json());
 
-  return user;
-};
+// routes
+app.use("/api/auth", authRoutes);
+
+app.get("/", (req, res) => {
+  res.send("API running...");
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
