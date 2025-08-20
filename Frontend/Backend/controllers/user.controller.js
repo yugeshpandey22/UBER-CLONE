@@ -1,6 +1,4 @@
 const User = require("../models/user.model");
-const BlacklistToken = require("../models/blacklistToken.model");  // import blacklist model
-const bcrypt = require("bcryptjs");
 
 // ========================= REGISTER =========================
 const registerUser = async (req, res) => {
@@ -16,6 +14,7 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // password hash
     const hashedPassword = await User.hashPassword(password);
 
     const user = new User({
@@ -55,13 +54,6 @@ const loginUser = async (req, res) => {
 
     const token = user.generateAuthToken();
 
-    // ✅ Yahi jagah cookie set karni hai
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false, // production me true karna
-      sameSite: "lax",
-    });
-
     res.status(200).json({
       user: {
         _id: user._id,
@@ -69,7 +61,7 @@ const loginUser = async (req, res) => {
         lastname: user.lastname,
         email: user.email,
       },
-      token, // optional: client ke liye bhejna
+      token,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -81,29 +73,8 @@ const getProfile = async (req, res) => {
   res.status(200).json(req.user);
 };
 
-// ========================= LOGOUT =========================
-const logoutUser = async (req, res) => {
-  try {
-    const token = req.cookies?.token || req.headers.authorization?.split(" ")[1]; 
-    if (!token) {
-      return res.status(400).json({ message: "Token not found" });
-    }
-
-    // Add token to blacklist
-    await BlacklistToken.create({ token });
-
-    // ✅ Yahi jagah cookie clear karni hai
-    res.clearCookie("token");
-
-    res.status(200).json({ message: "Logged out successfully" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 module.exports = {
   registerUser,
   loginUser,
-  getProfile,
-  logoutUser,   // ✅ export logout
+  getProfile,   // ✅ export kiya
 };

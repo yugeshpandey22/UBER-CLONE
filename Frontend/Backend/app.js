@@ -5,7 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const connectTodb = require('./db/db'); // ✅ correct relative path
 const userRoutes = require('./routes/user.routes'); // ✅ CORRECTED path
-const captainRoutes = require('./routes/captain.routes'); // ✅ CORRECTED path
+
 const app = express();
 
 // Connect to DB
@@ -23,5 +23,5 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/users', userRoutes);
-app.use('/captains', captainRoutes);
+
 module.exports = app;

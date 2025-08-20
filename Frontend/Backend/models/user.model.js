@@ -24,18 +24,13 @@ userSchema.methods.comparePassword = async function (password) {
 };
 
 // generate token
-
-
 userSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign(
-    { id: this._id },              // payload
-    process.env.JWT_SECRET,        // secret key
-    { expiresIn: "24h" }           // token expiry (example: 24 hours)
+  return jwt.sign(
+    { id: this._id, email: this.email },
+    process.env.JWT_SECRET || "secret123",
+    { expiresIn: "1d" }
   );
-
-  return token;
 };
-
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;
